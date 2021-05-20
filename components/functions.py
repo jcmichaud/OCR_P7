@@ -161,21 +161,21 @@ def reduce_df(df,
     return temp_df
 
 def graph_age_income(df,
+                    loan_test_value,
                     feature_figure_1 = 'AMT_CREDIT',
-                    feature_figure_2 = 'age',
                     min_revenu_value = 100000,
                     max_revenu_value = 200000,
                     min_age_value = 30,
                     max_age_value = 39
                     ):
 
-    min_revenu_condition = df[feature_figure_1]>=min_revenu_value
-    max_revenu_condition = df[feature_figure_1]<=max_revenu_value
+    min_revenu_condition = df['AMT_INCOME_TOTAL']>=min_revenu_value
+    max_revenu_condition = df['AMT_INCOME_TOTAL']<=max_revenu_value
 
     
 
-    min_age_condition = df[feature_figure_2]>=min_age_value
-    max_age_condition = df[feature_figure_2]<=max_age_value
+    min_age_condition = df['age']>=min_age_value
+    max_age_condition = df['age']<=max_age_value
 
     temp_df = df.loc[
                 (df['TARGET']!=-999)
@@ -187,13 +187,22 @@ def graph_age_income(df,
 
     fig = px.histogram(temp_df, 
                     x=feature_figure_1,
-                    y=feature_figure_2,
                     color='TARGET',
                     histfunc="min",
                     hover_data=temp_df.columns,
                     histnorm='density',
                     marginal="box"
                     )
+
+    fig.add_shape(type="line", yref="paper",
+              x0=loan_test_value, 
+              y0=0, 
+              x1=loan_test_value, 
+              y1=0.70,
+              line=dict(color="black",
+                        dash="dash",
+                        width=3)
+)
     # Reduce opacity to see both histograms
     fig.update_traces(opacity=0.5)
     fig.update_layout(barmode="overlay")

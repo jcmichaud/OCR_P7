@@ -22,6 +22,8 @@ train = train.set_index("SK_ID_CURR")
 y_train = pd.read_csv("Data/y_train20may21.csv")
 y_train = y_train.set_index("SK_ID_CURR")
 
+test = pd.read_csv("Data/test20may21.csv")
+test = test.set_index("SK_ID_CURR")
 y_test = pd.read_csv("Data/y_test20may21.csv")
 y_test = y_test.set_index("SK_ID_CURR")
 
@@ -55,8 +57,8 @@ Loans_selection = dcc.Dropdown(id='loans_selection',
 Histogram = dcc.Graph(
         id='histo_graph',
         figure=graph_age_income(df=train_complete,
-                    feature_figure_1 = 'AMT_CREDIT',
-                    feature_figure_2 = 'age',
+                    loan_test_value=0,
+                    feature_figure_1 = 'NEW_EXT_SOURCES_PROD',
                     min_revenu_value = 0,
                     max_revenu_value = 1000000,
                     min_age_value = 0,
@@ -95,7 +97,8 @@ app.layout = html.Div([
                 'backgroundColor': 'rgb(250, 250, 250)',
                 'padding': '10px 5px'}),
                 
-    ]),
+    ],style={'borderBottom': 'thin lightgrey solid',
+                'backgroundColor': 'rgb(250, 250, 250)'}),
 
     html.Div([
             html.Br(),
@@ -135,13 +138,14 @@ def update_output_div(input_value):
 @app.callback(
     dash.dependencies.Output('histo_graph', 'figure'),
     [dash.dependencies.Input('slider_revenu', 'value'),
-     dash.dependencies.Input('slider_age', 'value')])
+     dash.dependencies.Input('slider_age', 'value'),
+    dash.dependencies.Input('loans_selection', 'value')])
 
-def update_graph(revenu_value, age_value):
+def update_graph(revenu_value, age_value,loans_id):
 
     fig = graph_age_income(df=train_complete,
-                    feature_figure_1 = 'AMT_CREDIT',
-                    feature_figure_2 = 'age',
+                    loan_test_value = test.loc[loans_id,'NEW_EXT_SOURCES_PROD'],
+                    feature_figure_1 = 'NEW_EXT_SOURCES_PROD',
                     min_revenu_value = revenu_value[0],
                     max_revenu_value = revenu_value[1],
                     min_age_value = age_value[0],
