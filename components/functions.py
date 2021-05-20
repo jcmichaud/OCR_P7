@@ -3,7 +3,7 @@ import pandas as pd
 
 #Result figure
 
-
+############################ DONUT GRAPH RESULT ########################################################################## 
 def results_assessment(min_value=55,your_application_value = 85):
 
   label_min_value = str(min_value)+"%"
@@ -128,3 +128,64 @@ def results_assessment(min_value=55,your_application_value = 85):
                     width=400,
                     height=400)
   return fig
+
+
+############################ HISTOGRAMME GRAPH RESULT ##########################################################################
+def reduce_df(df,
+    feature_figure_1 = 'AMT_CREDIT',
+    feature_figure_2 = 'age',
+    min_revenu_value = 100000,
+    max_revenu_value = 200000,
+    min_age_value = 30,
+    max_age_value = 39):
+
+
+
+    min_revenu_condition = df[feature_figure_1]>=min_revenu_value
+    max_revenu_condition = df[feature_figure_1]<=max_revenu_value
+
+    
+
+    min_age_condition = df[feature_figure_2]>=min_age_value
+    max_age_condition = df[feature_figure_2]<=max_age_value
+
+    temp_df = df[
+                (df['TARGET']!=-999)
+                & min_revenu_condition
+                & max_revenu_condition
+                & min_age_condition
+                & max_age_condition
+                ]
+    return temp_df
+
+def graph_age_income(df,
+                    feature_figure_1 = 'AMT_CREDIT',
+                    feature_figure_2 = 'age',
+                    min_revenu_value = 100000,
+                    max_revenu_value = 200000,
+                    min_age_value = 30,
+                    max_age_value = 39
+                    ):
+
+    new_df = reduce_df(df,
+                        feature_figure_1,
+                        feature_figure_2,
+                        min_revenu_value,
+                        max_revenu_value,
+                        min_age_value,
+                        max_age_value)
+
+    fig = px.histogram(new_df, 
+                    x=feature_figure_1,
+                    y=feature_figure_2,
+                    color='TARGET',
+                    histfunc="min",
+                    hover_data=new_df.columns,
+                    histnorm='density',
+                    marginal="box"
+                    )
+    # Reduce opacity to see both histograms
+    fig.update_traces(opacity=0.5)
+    fig.update_layout(barmode="overlay")
+
+    return fig
