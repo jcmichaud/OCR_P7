@@ -90,13 +90,12 @@ app.layout = html.Div([
         html.Div([
             html.Label('Selection of the loans'),
             Loans_selection
-        ],style={'width': '48%', 'display': 'inline-block',
+        ],style={'width': '48%', 'float': 'right', 'display': 'inline-block',
                 'borderBottom': 'thin lightgrey solid',
                 'backgroundColor': 'rgb(250, 250, 250)',
                 'padding': '10px 5px'}),
                 
-    ],style={'columnCount': 2,
-        "background-color":'white'}),
+    ]),
 
     html.Div([
             html.Br(),
@@ -159,7 +158,7 @@ def update_graph(revenu_value, age_value):
 def update_graph(loans_id):
 
     fig = results_assessment(min_value=55, 
-                            your_application_value = y_test[loans_id]*100
+                            your_application_value = y_test.loc[loans_id,'TARGET']*100
                             )
     return fig
 #########################################
