@@ -162,27 +162,15 @@ def reduce_df(df,
 
 def graph_age_income(df,
                     feature_figure_1 = 'AMT_CREDIT',
-                    feature_figure_2 = 'age',
-                    min_revenu_value = 100000,
-                    max_revenu_value = 200000,
-                    min_age_value = 30,
-                    max_age_value = 39
-                    ):
+                    feature_figure_2 = 'age'):
 
-    new_df = reduce_df(df,
-                        feature_figure_1,
-                        feature_figure_2,
-                        min_revenu_value,
-                        max_revenu_value,
-                        min_age_value,
-                        max_age_value)
 
-    fig = px.histogram(new_df, 
+    fig = px.histogram(df, 
                     x=feature_figure_1,
                     y=feature_figure_2,
                     color='TARGET',
                     histfunc="min",
-                    hover_data=new_df.columns,
+                    hover_data=df.columns,
                     histnorm='density',
                     marginal="box"
                     )
