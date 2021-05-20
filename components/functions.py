@@ -1,5 +1,7 @@
 import plotly.graph_objects as go
 import pandas as pd
+import plotly.express as px
+
 
 #Result figure
 
@@ -189,3 +191,11 @@ def graph_age_income(df,
     fig.update_layout(barmode="overlay")
 
     return fig
+
+
+    
+
+
+
+
+
