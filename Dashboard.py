@@ -22,15 +22,12 @@ train = train.set_index("SK_ID_CURR")
 y_train = pd.read_csv("Data/y_train20may21.csv")
 y_train = y_train.set_index("SK_ID_CURR")
 
+y_test = pd.read_csv("Data/y_test20may21.csv")
+y_test = y_test.set_index("SK_ID_CURR")
+
 train_complete = pd.concat([train,y_train],axis=1)#[['age','AMT_CREDIT','AMT_INCOME_TOTAL','TARGET']]
 
-result_assessment = dcc.Graph(
-    id='result_assessment',
-    figure=results_assessment(min_value=55, 
-                            your_application_value = 85
-                            )
-    )
-
+################# INTERACTIONS #########################
 slider_age=dcc.RangeSlider(
     id='slider_age',
     min=18,
@@ -46,13 +43,35 @@ slider_revenu=dcc.RangeSlider(id='slider_revenu',
                             },
                     value=[0,1000000])
 
-age_income = dcc.Graph(
-        id='age_income_graph',
+
+Loans_selection = dcc.Dropdown(id='loans_selection',
+    options=[{'label': SK_ID, 'value': SK_ID} for SK_ID in y_test.index],
+    value=[],
+    searchable=True,
+    multi=False
+)  
+
+################# FIGURES ############################
+Histogram = dcc.Graph(
+        id='histo_graph',
         figure=graph_age_income(df=train_complete,
                     feature_figure_1 = 'AMT_CREDIT',
-                    feature_figure_2 = 'age'
+                    feature_figure_2 = 'age',
+                    min_revenu_value = 0,
+                    max_revenu_value = 1000000,
+                    min_age_value = 0,
+                    max_age_value = 99
                     )
 )
+
+result_assessment = dcc.Graph(
+    id='result_assessment',
+    figure=results_assessment(min_value=55, 
+                            your_application_value = 85
+                            )
+    )
+
+
 
 app.layout = html.Div([
     html.Div([
@@ -62,27 +81,28 @@ app.layout = html.Div([
                 html.Label('Select revenu range'),
                 slider_revenu
                 ], 
-                style={
+                
+        style={'width': '48%', 'display': 'inline-block',
                 'borderBottom': 'thin lightgrey solid',
                 'backgroundColor': 'rgb(250, 250, 250)',
                 'padding': '10px 5px'}
                 ),
         html.Div([
-            html.Table([
-                html.Tr([html.Td(['Age Range Selected']), html.Td(id='age_range_output')]),
-                html.Tr([html.Td(['Revenu Range Selected']), html.Td(id='revenu_range_output')]),
-            ])
-        ]),
+            html.Label('Selection of the loans'),
+            Loans_selection
+        ],style={'width': '48%', 'display': 'inline-block',
+                'borderBottom': 'thin lightgrey solid',
+                'backgroundColor': 'rgb(250, 250, 250)',
+                'padding': '10px 5px'}),
                 
     ],style={'columnCount': 2,
-        "background-color":'white',
-        "height": "100vh"}),
+        "background-color":'white'}),
 
     html.Div([
             html.Br(),
             result_assessment,
             html.Br(),
-            age_income,
+            Histogram,
             html.Br()
             ],
             style={'columnCount': 2,
@@ -113,28 +133,35 @@ def update_output_div(input_value):
 #########################################
 
 ################### Update Income graph
-
 @app.callback(
-    dash.dependencies.Output('age_income_graph', 'figure'),
+    dash.dependencies.Output('histo_graph', 'figure'),
     [dash.dependencies.Input('slider_revenu', 'value'),
      dash.dependencies.Input('slider_age', 'value')])
 
 def update_graph(revenu_value, age_value):
-    dff = train_complete.loc[
-        (train_complete['AMT_INCOME_TOTAL']>=revenu_value[0])
-        &(train_complete['AMT_INCOME_TOTAL']<=revenu_value[1])
-        &(train_complete['age']>=age_value[0])
-        &(train_complete['age']>=age_value[1])
-                        ,:]
 
-    fig = graph_age_income(df=dff,
+    fig = graph_age_income(df=train_complete,
                     feature_figure_1 = 'AMT_CREDIT',
-                    feature_figure_2 = 'age'
+                    feature_figure_2 = 'age',
+                    min_revenu_value = revenu_value[0],
+                    max_revenu_value = revenu_value[1],
+                    min_age_value = age_value[0],
+                    max_age_value = age_value[1]
                     )
     return fig
+#########################################
 
+################### Update Result Assesment
+@app.callback(
+    dash.dependencies.Output('result_assessment', 'figure'),
+    dash.dependencies.Input('loans_selection', 'value'))
 
+def update_graph(loans_id):
 
+    fig = results_assessment(min_value=55, 
+                            your_application_value = y_test[loans_id]*100
+                            )
+    return fig
 #########################################
 
 
