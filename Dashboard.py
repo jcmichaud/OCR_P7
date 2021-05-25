@@ -1,14 +1,8 @@
-import json
-import base64
-import datetime
-import io
-
 
 import dash
-import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 import plotly.express as px
 import pandas as pd
 from components.functions import results_assessment, graph_age_income
@@ -27,7 +21,7 @@ test = test.set_index("SK_ID_CURR")
 y_test = pd.read_csv("Data/y_test20may21.csv")
 y_test = y_test.set_index("SK_ID_CURR")
 
-train_complete = pd.concat([train,y_train],axis=1)#[['age','AMT_CREDIT','AMT_INCOME_TOTAL','TARGET']]
+train_histogram = pd.concat([train,y_train],axis=1)[['age','AMT_CREDIT','AMT_INCOME_TOTAL','TARGET','NEW_EXT_SOURCES_PROD']]
 
 ################# INTERACTIONS #########################
 slider_age=dcc.RangeSlider(
@@ -40,10 +34,10 @@ slider_age=dcc.RangeSlider(
 
 slider_revenu=dcc.RangeSlider(id='slider_revenu',
                     min=0,
-                    max=1000000,
-                    marks={i: '{} k$'.format(int(i/1000)) for i in range(0, 1000000,100000)
+                    max=100,
+                    marks={i: '{} k$'.format(int(i*10)) for i in range(0, 100) if i%10==0
                             },
-                    value=[0,1000000])
+                    value=[0,100])
 
 
 Loans_selection = dcc.Dropdown(id='loans_selection',
@@ -56,7 +50,7 @@ Loans_selection = dcc.Dropdown(id='loans_selection',
 ################# FIGURES ############################
 Histogram = dcc.Graph(
         id='histo_graph',
-        figure=graph_age_income(df=train_complete,
+        figure=graph_age_income(df=train_histogram,
                     loan_test_value=0,
                     feature_figure_1 = 'NEW_EXT_SOURCES_PROD',
                     min_revenu_value = 0,
@@ -101,38 +95,13 @@ app.layout = html.Div([
                 'backgroundColor': 'rgb(250, 250, 250)'}),
 
     html.Div([
-            html.Br(),
-            result_assessment,
-            html.Br(),
-            Histogram,
-            html.Br()
+            html.Div([result_assessment],style={'width': '20%'}),
+            html.Div([Histogram],style={'width': '70%'}),
             ],
-            style={'columnCount': 2,
-            "background-color":'white',
-            "height": "100vh"}),
+            style={'display': 'inline-block',            "background-color":'white'}),
 ])
 
 
-
-
-################ Treatment of Age Slider
-@app.callback(
-    Output(component_id='age_range_output', component_property='children'),
-    Input('slider_age', 'value'),
-    )
-def update_output_div(input_value):
-    return 'Age selected: {}'.format(input_value)
-#########################################
-
-
-################ Treatment of Revenu Slider
-@app.callback(
-    Output(component_id='revenu_range_output', component_property='children'),
-    Input('slider_revenu', 'value')
-    )
-def update_output_div(input_value):
-    return 'Revenu selected: {}'.format(input_value)
-#########################################
 
 ################### Update Income graph
 @app.callback(
@@ -143,14 +112,16 @@ def update_output_div(input_value):
 
 def update_graph(revenu_value, age_value,loans_id):
 
-    fig = graph_age_income(df=train_complete,
+    fig = graph_age_income(df=train_histogram,
                     loan_test_value = test.loc[loans_id,'NEW_EXT_SOURCES_PROD'],
                     feature_figure_1 = 'NEW_EXT_SOURCES_PROD',
-                    min_revenu_value = revenu_value[0],
-                    max_revenu_value = revenu_value[1],
+                    min_revenu_value = revenu_value[0]*10000,
+                    max_revenu_value = revenu_value[1]*10000,
                     min_age_value = age_value[0],
                     max_age_value = age_value[1]
                     )
+
+    fig.update_layout(title='NEW_EXT_SOURCES_PROD (Revenu : ' + str(revenu_value[0]*10) + " - " + str(revenu_value[1]*10) + "k$ / age :" + str(age_value[0]) + " - " + str(age_value[1]) +")")
     return fig
 #########################################
 

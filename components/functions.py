@@ -127,7 +127,7 @@ def results_assessment(min_value=55,your_application_value = 85):
 
   fig.update_layout(title_text="Your application result",
                     title_xref='paper',
-                    width=400,
+                    width=300,
                     height=400)
   return fig
 
@@ -188,8 +188,7 @@ def graph_age_income(df,
     fig = px.histogram(temp_df, 
                     x=feature_figure_1,
                     color='TARGET',
-                    histfunc="min",
-                    hover_data=temp_df.columns,
+                    hover_data=[feature_figure_1,'AMT_INCOME_TOTAL','age','TARGET'],
                     histnorm='density',
                     marginal="box"
                     )
@@ -205,7 +204,9 @@ def graph_age_income(df,
 )
     # Reduce opacity to see both histograms
     fig.update_traces(opacity=0.5)
-    fig.update_layout(barmode="overlay")
+    fig.update_layout(barmode="overlay", 
+                        width=1000, 
+                        height=400)
 
     return fig
 
