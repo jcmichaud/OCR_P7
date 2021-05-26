@@ -44,7 +44,8 @@ Loans_selection = dcc.Dropdown(id='loans_selection',
     options=[{'label': SK_ID, 'value': SK_ID} for SK_ID in y_test.index],
     value=[],
     searchable=True,
-    multi=False
+    multi=False,
+    optionHeight=30
 )  
 
 ################# FIGURES ############################
@@ -85,20 +86,43 @@ app.layout = html.Div([
                 ),
         html.Div([
             html.Label('Selection of the loans'),
-            Loans_selection
+            Loans_selection,
+            html.Div([
+                html.Div([
+                    html.Label('New income for loan applicant'),
+                    dcc.Input(
+                    id="income_input", type="number", placeholder="New income (k$)",
+                    min=10, max=10e5
+                    )],
+                    style={'width': '48%', 'display': 'inline-block',
+                    'borderBottom': 'thin lightgrey solid',
+                    'backgroundColor': 'rgb(250, 250, 250)',
+                    'padding': '10px 5px'}),
+                html.Div([
+                    html.Label('New value for days employed'),
+                    dcc.Input(
+                    id="days_employed_input", type="number", placeholder="Days employed (days)",
+                    min=0, max=40*365
+                    )],style={'width': '48%', 'float': 'right', 'display': 'inline-block',
+                    'borderBottom': 'thin lightgrey solid',
+                    'backgroundColor': 'rgb(250, 250, 250)',
+                    'padding': '10px 5px'})
+            ]
+            ),
         ],style={'width': '48%', 'float': 'right', 'display': 'inline-block',
                 'borderBottom': 'thin lightgrey solid',
                 'backgroundColor': 'rgb(250, 250, 250)',
                 'padding': '10px 5px'}),
                 
     ],style={'borderBottom': 'thin lightgrey solid',
-                'backgroundColor': 'rgb(250, 250, 250)'}),
+                'backgroundColor': 'rgb(250, 250, 250)',
+                'padding': '10px 5px'}),
 
     html.Div([
             html.Div([result_assessment],style={'width': '20%'}),
             html.Div([Histogram],style={'width': '70%'}),
             ],
-            style={'display': 'inline-block',            "background-color":'white'}),
+            style={'display': 'inline-block',"background-color":'white'}),
 ])
 
 
