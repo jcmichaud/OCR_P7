@@ -4,6 +4,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.express as px
+from joblib import load
 import pandas as pd
 from components.functions import results_assessment, graph_age_income
 
@@ -11,14 +12,22 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
-train = pd.read_csv("Data/train20may21.csv")
+cachedir = cachedir = 'Data/'
+VERSION_NAME="28may21"
+
+train = load(cachedir+"train_final_df"+VERSION_NAME)
+y_train = load(cachedir+"train_label"+VERSION_NAME)
+test = load(cachedir+"test_final_df"+VERSION_NAME)
+y_test = load(cachedir+"test_label"+VERSION_NAME)
+
+#train = pd.read_csv("Data/train20may21.csv")
 train = train.set_index("SK_ID_CURR")
-y_train = pd.read_csv("Data/y_train20may21.csv")
+#y_train = pd.read_csv("Data/y_train20may21.csv")
 y_train = y_train.set_index("SK_ID_CURR")
 
-test = pd.read_csv("Data/test20may21.csv")
+#test = pd.read_csv("Data/test20may21.csv")
 test = test.set_index("SK_ID_CURR")
-y_test = pd.read_csv("Data/y_test20may21.csv")
+#y_test = pd.read_csv("Data/y_test20may21.csv")
 y_test = y_test.set_index("SK_ID_CURR")
 
 train_histogram = pd.concat([train,y_train],axis=1)[['age','AMT_CREDIT','AMT_INCOME_TOTAL','TARGET','NEW_EXT_SOURCES_PROD']]
