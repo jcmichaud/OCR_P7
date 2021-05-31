@@ -12,25 +12,21 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
-cachedir = cachedir = 'Data/'
-VERSION_NAME="28may21_sampled_1000"
-
-train = load(cachedir+"train_final_df"+VERSION_NAME)
-y_train = load(cachedir+"train_label"+VERSION_NAME)
-test = load(cachedir+"test_final_df"+VERSION_NAME)
-y_test = load(cachedir+"test_label"+VERSION_NAME)
-
-#train = pd.read_csv("Data/train20may21.csv")
-#y_train = pd.read_csv("Data/y_train20may21.csv")
-#test = pd.read_csv("Data/test20may21.csv")
-# #y_test = pd.read_csv("Data/y_test20may21.csv")
-
-#train = train.set_index("SK_ID_CURR")=
-#y_train = y_train.set_index("SK_ID_CURR")
-#test = test.set_index("SK_ID_CURR")
-#y_test = y_test.set_index("SK_ID_CURR")
+cachedir = 'Data/'
+VERSION_NAME="31may21_sampled_2000.csv"
 
 
+train = pd.read_csv(cachedir+"train_final_df"+VERSION_NAME)
+y_train = pd.read_csv(cachedir+"train_label"+VERSION_NAME)
+test = pd.read_csv(cachedir+"test_final_df"+VERSION_NAME)
+y_test = pd.read_csv(cachedir+"test_label"+VERSION_NAME)
+
+train = train.set_index("SK_ID_CURR")
+y_train = y_train.set_index("SK_ID_CURR")
+test = test.set_index("SK_ID_CURR")
+y_test = y_test.set_index("SK_ID_CURR")
+
+model = load(cachedir+"modelxgboost1"+VERSION_NAME)
 
 
 
@@ -92,7 +88,7 @@ app.layout = html.Div([
                 slider_revenu
                 ], 
                 
-        style={'width': '48%', 'display': 'inline-block','float': 'right'}
+        style={'width': '48%', 'display': 'inline-block'}
                 ),
         html.Div([
             html.Label('Selection of the loans'),
@@ -104,18 +100,16 @@ app.layout = html.Div([
                     id="income_input", type="number", placeholder="New income (k$)",
                     min=10, max=10e5
                     )],
-                    style={'width': '48%', 'display': 'inline-block'}),
+                    style={'width': '48%', 'display': 'inline-block','float': 'right'}),
                 html.Div([
                     html.Label('New value for days employed'),
                     dcc.Input(
                     id="days_employed_input", type="number", placeholder="Days employed (days)",
                     min=0, max=40*365
-                    )],style={'width': '48%', 'float': 'right', 'display': 'inline-block'})
+                    )])
             ]
             ),
-        ],style={'borderBottom': 'thin lightgrey solid',
-                'backgroundColor': 'rgb(250, 250, 250)',
-                'padding': '10px 5px'}),
+        ],style={'width': '48%', 'float': 'right', 'display': 'inline-block','float': 'right'}),
                 
     ],style={'borderBottom': 'thin lightgrey solid',
                 'backgroundColor': 'rgb(250, 250, 250)',
