@@ -125,8 +125,12 @@ app.layout = html.Div([
                 html.Div([
                     html.Label('New income for loan applicant'),
                     dcc.Input(
-                    id="income_input", type="number", placeholder="New income (k$)",
-                    min=10, max=10e5
+                    id="income_input", 
+                    type="number", 
+                    placeholder="New income (k$)",
+                    min=10, 
+                    max=10e5,
+                    value=Loan_selected['AMT_INCOME_TOTAL']
                     )],
                     style={'width': '48%', 'display': 'inline-block','float': 'right'}),
                 html.Div([
