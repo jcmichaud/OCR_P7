@@ -1,25 +1,35 @@
 
+# For Dash
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
+
+#from specific functions
+from components.functions import results_assessment, graph_histogram
+
+# For graph
 import plotly.express as px
+
+#for model
 from joblib import load
+import xgboost
 import pandas as pd
-from components.functions import results_assessment, graph_age_income
+
+
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 cachedir = 'Data/'
-VERSION_NAME="31may21_sampled_2000.csv"
+VERSION_NAME="31may21_sampled_2000"
 
 
-train = pd.read_csv(cachedir+"train_final_df"+VERSION_NAME)
-y_train = pd.read_csv(cachedir+"train_label"+VERSION_NAME)
-test = pd.read_csv(cachedir+"test_final_df"+VERSION_NAME)
-y_test = pd.read_csv(cachedir+"test_label"+VERSION_NAME)
+train = pd.read_csv(cachedir+"train_final_df"+VERSION_NAME+".csv")
+y_train = pd.read_csv(cachedir+"train_label"+VERSION_NAME+".csv")
+test = pd.read_csv(cachedir+"test_final_df"+VERSION_NAME+".csv")
+y_test = pd.read_csv(cachedir+"test_label"+VERSION_NAME+".csv")
 
 train = train.set_index("SK_ID_CURR")
 y_train = y_train.set_index("SK_ID_CURR")
@@ -28,9 +38,17 @@ y_test = y_test.set_index("SK_ID_CURR")
 
 model = load(cachedir+"modelxgboost1"+VERSION_NAME)
 
+first_loan_index = test.iloc[0,:].name
 
+Loan_selected = test.loc[first_loan_index,:].copy(True)
 
-train_histogram = pd.concat([train,y_train],axis=1)[['age','AMT_CREDIT','AMT_INCOME_TOTAL','TARGET','NEW_EXT_SOURCES_PROD']]
+list_features_selection = ['NEW_EXT_SOURCES_PROD','MONTH(DAYS_LAST_PHONE_CHANGE_timedelta)',
+                            'NEW_CREDIT_TO_GOODS_RATIO',
+                            'AMT_ANNUITY','NEW_EMPLOY_TO_BIRTH_RATIO',
+                            'FLAG_EMP_PHONE','FLAG_WORK_PHONE',
+                            'FLAG_CONT_MOBILE','FLAG_PHONE']
+
+train_histogram = pd.concat([train,y_train],axis=1)[['age','AMT_CREDIT','AMT_INCOME_TOTAL','TARGET',]+list_features_selection]
 
 ################# INTERACTIONS #########################
 slider_age=dcc.RangeSlider(
@@ -51,16 +69,24 @@ slider_revenu=dcc.RangeSlider(id='slider_revenu',
 
 Loans_selection = dcc.Dropdown(id='loans_selection',
     options=[{'label': SK_ID, 'value': SK_ID} for SK_ID in y_test.index],
-    value=[],
+    value=first_loan_index,
     searchable=True,
     multi=False,
     optionHeight=30
-)  
+)
+
+Features_histogram_selection = dcc.Dropdown(id='features_histogram_selection',
+    options=[{'label': feat, 'value': feat} for feat in list_features_selection],
+    value='NEW_EXT_SOURCES_PROD',
+    searchable=True,
+    multi=False,
+    optionHeight=30
+)
 
 ################# FIGURES ############################
 Histogram = dcc.Graph(
         id='histo_graph',
-        figure=graph_age_income(df=train_histogram,
+        figure=graph_histogram(df=train_histogram,
                     loan_test_value=0,
                     feature_figure_1 = 'NEW_EXT_SOURCES_PROD',
                     min_revenu_value = 0,
@@ -93,6 +119,8 @@ app.layout = html.Div([
         html.Div([
             html.Label('Selection of the loans'),
             Loans_selection,
+            html.Label('Selection of the feature'),
+            Features_histogram_selection,
             html.Div([
                 html.Div([
                     html.Label('New income for loan applicant'),
@@ -129,20 +157,21 @@ app.layout = html.Div([
     dash.dependencies.Output('histo_graph', 'figure'),
     [dash.dependencies.Input('slider_revenu', 'value'),
      dash.dependencies.Input('slider_age', 'value'),
-    dash.dependencies.Input('loans_selection', 'value')])
+    dash.dependencies.Input('loans_selection', 'value'),
+    dash.dependencies.Input('features_histogram_selection')])
 
-def update_graph(revenu_value, age_value,loans_id):
+def update_graph(revenu_value, age_value,loans_id,feature_selected):
 
-    fig = graph_age_income(df=train_histogram,
-                    loan_test_value = test.loc[loans_id,'NEW_EXT_SOURCES_PROD'],
-                    feature_figure_1 = 'NEW_EXT_SOURCES_PROD',
+    fig = graph_histogram(df=train_histogram,
+                    loan_test_value = test.loc[loans_id,feature_selected],
+                    feature_figure_1 = feature_selected,
                     min_revenu_value = revenu_value[0]*10000,
                     max_revenu_value = revenu_value[1]*10000,
                     min_age_value = age_value[0],
                     max_age_value = age_value[1]
                     )
 
-    fig.update_layout(title='NEW_EXT_SOURCES_PROD (Revenu : ' + str(revenu_value[0]*10) + " - " + str(revenu_value[1]*10) + "k$ / age :" + str(age_value[0]) + " - " + str(age_value[1]) +")")
+    fig.update_layout(title=feature_selected +'(Revenu : ' + str(revenu_value[0]*10) + " - " + str(revenu_value[1]*10) + "k$ / age :" + str(age_value[0]) + " - " + str(age_value[1]) +")")
     return fig
 #########################################
 
@@ -160,6 +189,6 @@ def update_graph(loans_id):
 #########################################
 
 
+dash.dependencies.Input('loans_selection', 'value')
 if __name__ == '__main__':
-        app.run_server(debug=True)
-   
+    app.run_server(debug=True)

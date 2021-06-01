@@ -160,7 +160,7 @@ def reduce_df(df,
                 ]
     return temp_df
 
-def graph_age_income(df,
+def graph_histogram(df,
                     loan_test_value,
                     feature_figure_1 = 'AMT_CREDIT',
                     min_revenu_value = 100000,
