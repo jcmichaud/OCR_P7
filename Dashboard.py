@@ -20,7 +20,7 @@ import numpy as np
 
 
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = ['bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
@@ -107,57 +107,70 @@ result_assessment = dcc.Graph(
                             )
     )
 
-
-
-app.layout = html.Div([
-    html.Div([
-        html.Div([
-                html.Label('Select age range'),
-                slider_age,
-                html.Label('Select revenu range'),
-                slider_revenu
-                ], 
-                
-        style={'width': '48%', 'display': 'inline-block'}
-                ),
-        html.Div([
-            html.Label('Selection of the loans'),
-            Loans_selection,
-            html.Label('Selection of the feature'),
-            Features_histogram_selection,
-            html.Div([
-                html.Div([
-                    html.Label('New income for loan applicant'),
-                    dcc.Input(
+income_value_input = dcc.Input(
                     id="income_input", 
                     type="number", 
                     placeholder="New income (k$)",
                     min=10, 
                     max=10e5,
                     value=test.loc[loan_selected_index,'AMT_INCOME_TOTAL']
-                    )],
-                    style={'width': '48%', 'display': 'inline-block','float': 'right'}),
-                html.Div([
-                    html.Label('New value for days employed'),
-                    dcc.Input(
+                    )
+
+days_employed_value_input =dcc.Input(
                     id="days_employed_input", type="number", placeholder="Days employed (years)",
                     min=-20, max=40,
                     value=test.loc[loan_selected_index,'MONTH(DAYS_EMPLOYED_timedelta)']
-                    )])
-            ]
-            ),
-        ],style={'width': '48%', 'float': 'right', 'display': 'inline-block'}),
-                
-    ],style={'borderBottom': 'thin lightgrey solid',
+                    )
+
+app.layout = html.Div([
+    html.Header([
+        html.Div([
+                html.Label('Select age range'),
+                slider_age,
+                html.Hr(),
+
+                html.Label('Select revenu range'),
+                slider_revenu
+                ],                
+        style={'width': '48%', 'display': 'inline-block','margin-bottom': '2.5rem'}
+                ),
+        html.Div([
+            html.Label('Selection of the loans'),
+            Loans_selection,
+            html.Hr(),
+
+            html.Label('Selection of the feature'),
+            Features_histogram_selection,
+            html.Hr(),
+            
+            html.Div([              
+                html.Label('New income for loan applicant'),
+                income_value_input
+                ],
+                style={'width': '50%', 'display': 'inline-block','float': 'right'}
+                ),
+            html.Div([        
+                html.Label('New value for days employed'),
+                days_employed_value_input
+                ],
+                style={'width': '30%', 'display': 'inline-block'}
+                )],                
+            style={'width': '48%', 'display': 'inline-block','float': 'right'}
+            )
+            ],
+        style={'marginBottom': 5, 
+                'borderBottom': 'thin lightgrey solid',
                 'backgroundColor': 'rgb(250, 250, 250)',
-                'padding': '10px 5px'}),
+                'padding': '10px 5px'
+                }
+            ),
 
     html.Div([
-            html.Div([result_assessment],style={'width': '15%','display': 'inline-block'}),
-            html.Div([Histogram],style={'width': '79%','display': 'inline-block','float': 'right'}),
+            html.Div([result_assessment],style={'width': '39%','display': 'inline-block'}),
+            html.Div([Histogram],style={'width': '60%','display': 'inline-block','float': 'right'}),
             ],
             style={'display': 'inline-block',"background-color":'white'}),
-])
+            ])
 
 
 
@@ -221,7 +234,7 @@ def update_graph(loans_id):
     fig = results_assessment(min_value=55, 
                             your_application_value = np.round(result_assessment_model_updated[1,0],2)*100
                             )
-    fig.update_layout(title='Your application results : ' + str(result_assessment_model_updated[1,0]*100))                        
+    fig.update_layout(title='Your application results : ' + str(np.round(result_assessment_model_updated[1,0],2)*100))                        
     return fig
 #########################################
 
