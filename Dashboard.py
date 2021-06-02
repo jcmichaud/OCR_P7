@@ -10,6 +10,7 @@ from components.functions import results_assessment, graph_histogram
 
 # For graph
 import plotly.express as px
+import shap
 
 #for model
 from joblib import load
@@ -24,7 +25,7 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 cachedir = 'Data/'
-VERSION_NAME="31may21_sampled_2000"
+VERSION_NAME="1juin21_less_features_2_sampled_2000"
 
 
 train = pd.read_csv(cachedir+"train_final_df"+VERSION_NAME+".csv",sep=",")
@@ -37,7 +38,7 @@ y_train = y_train.set_index("SK_ID_CURR")
 test = test.set_index("SK_ID_CURR")
 y_test = y_test.set_index("SK_ID_CURR")
 
-model = load(cachedir+"modelxgboost1"+VERSION_NAME)
+model = load(cachedir+"modelxgboost3"+VERSION_NAME)
 
 loan_selected_index = test.iloc[0,:].name
 test.loc["New_loan",:] = test.loc[loan_selected_index,:]
