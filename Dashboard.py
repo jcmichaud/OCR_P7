@@ -15,6 +15,7 @@ import plotly.express as px
 from joblib import load
 import xgboost
 import pandas as pd
+import numpy as np
 
 
 
@@ -26,10 +27,10 @@ cachedir = 'Data/'
 VERSION_NAME="31may21_sampled_2000"
 
 
-train = pd.read_csv(cachedir+"train_final_df"+VERSION_NAME+".csv")
-y_train = pd.read_csv(cachedir+"train_label"+VERSION_NAME+".csv")
-test = pd.read_csv(cachedir+"test_final_df"+VERSION_NAME+".csv")
-y_test = pd.read_csv(cachedir+"test_label"+VERSION_NAME+".csv")
+train = pd.read_csv(cachedir+"train_final_df"+VERSION_NAME+".csv",sep=",")
+y_train = pd.read_csv(cachedir+"train_label"+VERSION_NAME+".csv",sep=",")
+test = pd.read_csv(cachedir+"test_final_df"+VERSION_NAME+".csv",sep=",")
+y_test = pd.read_csv(cachedir+"test_label"+VERSION_NAME+".csv",sep=",")
 
 train = train.set_index("SK_ID_CURR")
 y_train = y_train.set_index("SK_ID_CURR")
@@ -38,17 +39,19 @@ y_test = y_test.set_index("SK_ID_CURR")
 
 model = load(cachedir+"modelxgboost1"+VERSION_NAME)
 
-first_loan_index = test.iloc[0,:].name
+loan_selected_index = test.iloc[0,:].name
+test.loc["New_loan",:] = test.loc[loan_selected_index,:]
+ 
 
-Loan_selected = test.loc[first_loan_index,:].copy(True)
-
-list_features_selection = ['NEW_EXT_SOURCES_PROD','MONTH(DAYS_LAST_PHONE_CHANGE_timedelta)',
-                            'NEW_CREDIT_TO_GOODS_RATIO',
+list_features_selection = ['NEW_EXT_SOURCES_PROD','MONTH(DAYS_EMPLOYED_timedelta)',
+                            'MONTH(DAYS_LAST_PHONE_CHANGE_timedelta)','NEW_CREDIT_TO_GOODS_RATIO',
                             'AMT_ANNUITY','NEW_EMPLOY_TO_BIRTH_RATIO',
                             'FLAG_EMP_PHONE','FLAG_WORK_PHONE',
                             'FLAG_CONT_MOBILE','FLAG_PHONE']
 
 train_histogram = pd.concat([train,y_train],axis=1)[['age','AMT_CREDIT','AMT_INCOME_TOTAL','TARGET',]+list_features_selection]
+
+result_assessment_model = model.predict_proba(test.loc[[loan_selected_index,"New_loan",],])
 
 ################# INTERACTIONS #########################
 slider_age=dcc.RangeSlider(
@@ -69,7 +72,7 @@ slider_revenu=dcc.RangeSlider(id='slider_revenu',
 
 Loans_selection = dcc.Dropdown(id='loans_selection',
     options=[{'label': SK_ID, 'value': SK_ID} for SK_ID in y_test.index],
-    value=first_loan_index,
+    value=loan_selected_index,
     searchable=True,
     multi=False,
     optionHeight=30
@@ -99,7 +102,7 @@ Histogram = dcc.Graph(
 result_assessment = dcc.Graph(
     id='result_assessment',
     figure=results_assessment(min_value=55, 
-                            your_application_value = 85
+                            your_application_value = round(result_assessment_model[1,0],2)*100
                             )
     )
 
@@ -130,26 +133,27 @@ app.layout = html.Div([
                     placeholder="New income (k$)",
                     min=10, 
                     max=10e5,
-                    value=Loan_selected['AMT_INCOME_TOTAL']
+                    value=test.loc[loan_selected_index,'AMT_INCOME_TOTAL']
                     )],
                     style={'width': '48%', 'display': 'inline-block','float': 'right'}),
                 html.Div([
                     html.Label('New value for days employed'),
                     dcc.Input(
-                    id="days_employed_input", type="number", placeholder="Days employed (days)",
-                    min=0, max=40*365
+                    id="days_employed_input", type="number", placeholder="Days employed (years)",
+                    min=-20, max=40,
+                    value=test.loc[loan_selected_index,'MONTH(DAYS_EMPLOYED_timedelta)']
                     )])
             ]
             ),
-        ],style={'width': '48%', 'float': 'right', 'display': 'inline-block','float': 'right'}),
+        ],style={'width': '48%', 'float': 'right', 'display': 'inline-block'}),
                 
     ],style={'borderBottom': 'thin lightgrey solid',
                 'backgroundColor': 'rgb(250, 250, 250)',
                 'padding': '10px 5px'}),
 
     html.Div([
-            html.Div([result_assessment],style={'width': '20%'}),
-            html.Div([Histogram],style={'width': '70%'}),
+            html.Div([result_assessment],style={'width': '15%','display': 'inline-block'}),
+            html.Div([Histogram],style={'width': '79%','display': 'inline-block','float': 'right'}),
             ],
             style={'display': 'inline-block',"background-color":'white'}),
 ])
@@ -162,7 +166,7 @@ app.layout = html.Div([
     [dash.dependencies.Input('slider_revenu', 'value'),
      dash.dependencies.Input('slider_age', 'value'),
     dash.dependencies.Input('loans_selection', 'value'),
-    dash.dependencies.Input('features_histogram_selection')])
+    dash.dependencies.Input('features_histogram_selection','value')])
 
 def update_graph(revenu_value, age_value,loans_id,feature_selected):
 
@@ -179,6 +183,29 @@ def update_graph(revenu_value, age_value,loans_id,feature_selected):
     return fig
 #########################################
 
+################### Update Income Value
+@app.callback(
+    dash.dependencies.Output('income_input', 'value'),
+    dash.dependencies.Input('loans_selection', 'value'))
+
+def update_income_value(loan_id):
+
+    new_income = test.loc[loan_id,'AMT_INCOME_TOTAL']
+    return new_income
+#########################################
+
+################### Update Days employed
+@app.callback(
+    dash.dependencies.Output('days_employed_input', 'value'),
+    dash.dependencies.Input('loans_selection', 'value'))
+
+def update_income_value(loan_id):
+
+    new_days_employed = test.loc[loan_id,'MONTH(DAYS_EMPLOYED_timedelta)']
+    return new_days_employed
+#########################################
+
+
 ################### Update Result Assesment
 @app.callback(
     dash.dependencies.Output('result_assessment', 'figure'),
@@ -186,9 +213,14 @@ def update_graph(revenu_value, age_value,loans_id,feature_selected):
 
 def update_graph(loans_id):
 
+    test.loc["New_loan",:] = test.loc[loans_id,:]
+ 
+    result_assessment_model_updated = np.round(model.predict_proba(test.loc[[loans_id,"New_loan",],]),2)
+
     fig = results_assessment(min_value=55, 
-                            your_application_value = y_test.loc[loans_id,'TARGET']*100
+                            your_application_value = np.round(result_assessment_model_updated[1,0],2)*100
                             )
+    fig.update_layout(title='Your application results : ' + str(result_assessment_model_updated[1,0]*100))                        
     return fig
 #########################################
 
