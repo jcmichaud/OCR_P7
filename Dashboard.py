@@ -16,7 +16,7 @@ import shap
 from joblib import load
 import xgboost
 import pandas as pd
-import numpy as np
+
 
 
 
@@ -127,41 +127,57 @@ app.layout = html.Div([
         html.Div([
                 html.Label('Select age range'),
                 slider_age,
-                html.Hr(),
+                html.Hr(className="light"),
 
                 html.Label('Select revenu range'),
                 slider_revenu
                 ],                
-        style={'width': '48%', 'display': 'inline-block','margin-bottom': '2.5rem'}
+        style={
+            'width': '48%', 
+            'display': 'inline-block',
+            'margin-top': '1.5rem',
+            'margin-bottom': '1.5rem'
+            }
                 ),
         html.Div([
             html.Label('Selection of the loans'),
             Loans_selection,
-            html.Hr(),
+            html.Hr(className="light"),
 
             html.Label('Selection of the feature'),
             Features_histogram_selection,
-            html.Hr(),
+            html.Hr(className="light"),
             
             html.Div([              
                 html.Label('New income for loan applicant'),
+                html.Br(),
                 income_value_input
                 ],
-                style={'width': '50%', 'display': 'inline-block','float': 'right'}
+                style={
+                    'width': '50%', 
+                    'display': 'inline-block',
+                    'float': 'right'
+                    }
                 ),
             html.Div([        
                 html.Label('New value for days employed'),
+                html.Br(),
                 days_employed_value_input
                 ],
                 style={'width': '30%', 'display': 'inline-block'}
                 )],                
-            style={'width': '48%', 'display': 'inline-block','float': 'right'}
+            style={
+                'width': '48%', 
+                'display': 'inline-block',
+                'float': 'right'
+                }
             )
             ],
-        style={'marginBottom': 5, 
-                'borderBottom': 'thin lightgrey solid',
-                'backgroundColor': 'rgb(250, 250, 250)',
-                'padding': '10px 5px'
+        style={
+            'marginBottom': 5, 
+            'borderBottom': 'thin lightgrey solid',
+            'backgroundColor': 'rgb(250, 250, 250)',
+            'padding': '10px 5px'
                 }
             ),
 
@@ -229,12 +245,12 @@ def update_graph(loans_id):
 
     test.loc["New_loan",:] = test.loc[loans_id,:]
  
-    result_assessment_model_updated = np.round(model.predict_proba(test.loc[[loans_id,"New_loan",],]),2)
+    result_assessment_model_updated = round(model.predict_proba(test.loc[[loans_id,"New_loan",],:])[1,0]*100,0)
 
     fig = results_assessment(min_value=55, 
-                            your_application_value = np.round(result_assessment_model_updated[1,0],2)*100
+                            your_application_value = result_assessment_model_updated
                             )
-    fig.update_layout(title='Your application results : ' + str(np.round(result_assessment_model_updated[1,0],2)*100))                        
+    fig.update_layout(title='Your application results : ' + str(result_assessment_model_updated) + "%")                      
     return fig
 #########################################
 

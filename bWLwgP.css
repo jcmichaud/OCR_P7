@@ -374,8 +374,14 @@ hr {
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
   border-width: 0;
-  border-top: 1px solid #E1E1E1; }
-
+  border-top: 	thin lightgrey solid; 
+}
+hr.light {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-width: 0;
+  border-top: 	thin lightgrey solid; 
+}
 
 /* Clearing
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
