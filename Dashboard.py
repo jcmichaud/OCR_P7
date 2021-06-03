@@ -44,13 +44,12 @@ loan_selected_index = test.iloc[0,:].name
 test.loc["New_loan",:] = test.loc[loan_selected_index,:]
  
 
-list_features_selection = ['NEW_EXT_SOURCES_PROD','MONTH(DAYS_EMPLOYED_timedelta)',
+list_features_selection = ['age','AMT_CREDIT','AMT_INCOME_TOTAL',
+                            'NEW_EXT_SOURCES_PROD','YEAR(DAYS_EMPLOYED_timedelta)',
                             'MONTH(DAYS_LAST_PHONE_CHANGE_timedelta)','NEW_CREDIT_TO_GOODS_RATIO',
-                            'AMT_ANNUITY','NEW_EMPLOY_TO_BIRTH_RATIO',
-                            'FLAG_EMP_PHONE','FLAG_WORK_PHONE',
-                            'FLAG_CONT_MOBILE','FLAG_PHONE']
+                            'AMT_ANNUITY','NEW_EMPLOY_TO_BIRTH_RATIO']
 
-train_histogram = pd.concat([train,y_train],axis=1)[['age','AMT_CREDIT','AMT_INCOME_TOTAL','TARGET',]+list_features_selection]
+train_histogram = pd.concat([train,y_train],axis=1)[['TARGET',]+list_features_selection]
 
 result_assessment_model = model.predict_proba(test.loc[[loan_selected_index,"New_loan",],])
 
@@ -117,9 +116,9 @@ income_value_input = dcc.Input(
                     )
 
 days_employed_value_input =dcc.Input(
-                    id="days_employed_input", type="number", placeholder="Days employed (years)",
-                    min=-20, max=40,
-                    value=test.loc[loan_selected_index,'MONTH(DAYS_EMPLOYED_timedelta)']
+                    id="days_employed_input", type="number", placeholder="Days employed",
+                    min=-20*365, max=50*365 ,
+                    value=test.loc[loan_selected_index,'YEAR(DAYS_EMPLOYED_timedelta)']
                     )
 
 app.layout = html.Div([
@@ -196,9 +195,11 @@ app.layout = html.Div([
     [dash.dependencies.Input('slider_revenu', 'value'),
      dash.dependencies.Input('slider_age', 'value'),
     dash.dependencies.Input('loans_selection', 'value'),
-    dash.dependencies.Input('features_histogram_selection','value')])
+    dash.dependencies.Input('features_histogram_selection','value'),
+    dash.dependencies.Input('income_input', 'value'),
+    dash.dependencies.Input('days_employed_input', 'value')])
 
-def update_graph(revenu_value, age_value,loans_id,feature_selected):
+def update_graph(revenu_value, age_value,loans_id,feature_selected,new_income_value,new_days_employed):
 
     fig = graph_histogram(df=train_histogram,
                     loan_test_value = test.loc[loans_id,feature_selected],
@@ -208,8 +209,35 @@ def update_graph(revenu_value, age_value,loans_id,feature_selected):
                     min_age_value = age_value[0],
                     max_age_value = age_value[1]
                     )
+    
+    
+    if feature_selected=='AMT_INCOME_TOTAL':
+        fig.add_shape(type="line", yref="paper",
+            x0=new_income_value, 
+            y0=0, 
+            x1=new_income_value, 
+            y1=0.70,
+            line=dict(color="green",
+                    dash="dash",
+                    width=3),
+                    label="New Income"
+        )
+
+    elif feature_selected=='YEAR(DAYS_EMPLOYED_timedelta)':
+        fig.add_shape(type="line", yref="paper",
+            x0=new_days_employed, 
+            y0=0, 
+            x1=new_days_employed, 
+            y1=0.70,
+            line=dict(color="green",
+                    dash="dash",
+                    width=3),
+                    label="New value for days employed"
+        )                    
 
     fig.update_layout(title=feature_selected +'(Revenu : ' + str(revenu_value[0]*10) + " - " + str(revenu_value[1]*10) + "k$ / age :" + str(age_value[0]) + " - " + str(age_value[1]) +")")
+    
+    
     return fig
 #########################################
 
@@ -231,7 +259,7 @@ def update_income_value(loan_id):
 
 def update_income_value(loan_id):
 
-    new_days_employed = test.loc[loan_id,'MONTH(DAYS_EMPLOYED_timedelta)']
+    new_days_employed = test.loc[loan_id,'YEAR(DAYS_EMPLOYED_timedelta)']
     return new_days_employed
 #########################################
 
@@ -250,6 +278,8 @@ def update_graph(loans_id):
     fig = results_assessment(min_value=55, 
                             your_application_value = result_assessment_model_updated
                             )
+
+                      
     fig.update_layout(title='Your application results : ' + str(result_assessment_model_updated) + "%")                      
     return fig
 #########################################
