@@ -25,7 +25,7 @@ external_stylesheets = ['bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 cachedir = 'Data/'
-VERSION_NAME="1juin21_less_features_2_sampled_2000"
+VERSION_NAME="3juin21_v4_sampled_2500"
 
 
 train = pd.read_csv(cachedir+"train_final_df"+VERSION_NAME+".csv",sep=",")
@@ -44,12 +44,12 @@ loan_selected_index = test.iloc[0,:].name
 test.loc["New_loan",:] = test.loc[loan_selected_index,:]
  
 
-list_features_selection = ['age','AMT_CREDIT','AMT_INCOME_TOTAL',
-                            'NEW_EXT_SOURCES_PROD','YEAR(DAYS_EMPLOYED_timedelta)',
-                            'MONTH(DAYS_LAST_PHONE_CHANGE_timedelta)','NEW_CREDIT_TO_GOODS_RATIO',
+list_features_selection = ['age','AMT_CREDIT','NEW_CREDIT_TO_ANNUITY_RATIO',
+                            'NEW_EXT_SOURCES_PROD','NEW_EXT_SOURCES_MEAN',
+                            'MONTH(DAYS_LAST_PHONE_CHANGE_timedelta)',
                             'AMT_ANNUITY','NEW_EMPLOY_TO_BIRTH_RATIO']
 
-train_histogram = pd.concat([train,y_train],axis=1)[['TARGET',]+list_features_selection]
+train_histogram = pd.concat([train,y_train],axis=1)[['TARGET','AMT_INCOME_TOTAL']+list_features_selection]
 
 result_assessment_model = model.predict_proba(test.loc[[loan_selected_index,"New_loan",],])
 
@@ -86,6 +86,20 @@ Features_histogram_selection = dcc.Dropdown(id='features_histogram_selection',
     optionHeight=30
 )
 
+ratio_value_input = dcc.Input(
+                    id="ratio_input", 
+                    type="number", 
+                    placeholder="New credit to annuity ratio",
+                    min=0,
+                    value=round(test.loc[loan_selected_index,'NEW_CREDIT_TO_ANNUITY_RATIO'],2)
+                    )
+
+NEW_EXT_SOURCES_MEAN_value_input =dcc.Input(
+                    id="NEW_EXT_SOURCES_MEAN_input", type="number", placeholder="NEW_EXT_SOURCES_MEAN",
+                    min=0, 
+                    max=1 ,
+                    value=round(test.loc[loan_selected_index,'NEW_EXT_SOURCES_MEAN'],3)
+                    )
 ################# FIGURES ############################
 Histogram = dcc.Graph(
         id='histo_graph',
@@ -106,20 +120,6 @@ result_assessment = dcc.Graph(
                             )
     )
 
-income_value_input = dcc.Input(
-                    id="income_input", 
-                    type="number", 
-                    placeholder="New income (k$)",
-                    min=10, 
-                    max=10e5,
-                    value=test.loc[loan_selected_index,'AMT_INCOME_TOTAL']
-                    )
-
-days_employed_value_input =dcc.Input(
-                    id="days_employed_input", type="number", placeholder="Days employed",
-                    min=-20*365, max=50*365 ,
-                    value=test.loc[loan_selected_index,'YEAR(DAYS_EMPLOYED_timedelta)']
-                    )
 
 app.layout = html.Div([
     html.Header([
@@ -148,9 +148,9 @@ app.layout = html.Div([
             html.Hr(className="light"),
             
             html.Div([              
-                html.Label('New income for loan applicant'),
+                html.Label('New credit to annuity ratio'),
                 html.Br(),
-                income_value_input
+                ratio_value_input
                 ],
                 style={
                     'width': '50%', 
@@ -159,9 +159,9 @@ app.layout = html.Div([
                     }
                 ),
             html.Div([        
-                html.Label('New value for days employed'),
+                html.Label('New value EXT Sources mean'),
                 html.Br(),
-                days_employed_value_input
+                NEW_EXT_SOURCES_MEAN_value_input
                 ],
                 style={'width': '30%', 'display': 'inline-block'}
                 )],                
@@ -189,17 +189,17 @@ app.layout = html.Div([
 
 
 
-################### Update Income graph
+################### Update ratio graph
 @app.callback(
     dash.dependencies.Output('histo_graph', 'figure'),
     [dash.dependencies.Input('slider_revenu', 'value'),
      dash.dependencies.Input('slider_age', 'value'),
     dash.dependencies.Input('loans_selection', 'value'),
     dash.dependencies.Input('features_histogram_selection','value'),
-    dash.dependencies.Input('income_input', 'value'),
-    dash.dependencies.Input('days_employed_input', 'value')])
+    dash.dependencies.Input('ratio_input', 'value'),
+    dash.dependencies.Input('NEW_EXT_SOURCES_MEAN_input', 'value')])
 
-def update_graph(revenu_value, age_value,loans_id,feature_selected,new_income_value,new_days_employed):
+def update_graph(revenu_value, age_value,loans_id,feature_selected,new_ratio_value,new_NEW_EXT_SOURCES_MEAN):
 
     fig = graph_histogram(df=train_histogram,
                     loan_test_value = test.loc[loans_id,feature_selected],
@@ -211,28 +211,41 @@ def update_graph(revenu_value, age_value,loans_id,feature_selected,new_income_va
                     )
     
     
-    if feature_selected=='AMT_INCOME_TOTAL':
+    if feature_selected=='NEW_CREDIT_TO_ANNUITY_RATIO':
         fig.add_shape(type="line", yref="paper",
-            x0=new_income_value, 
+            x0=new_ratio_value, 
             y0=0, 
-            x1=new_income_value, 
+            x1=new_ratio_value, 
             y1=0.70,
             line=dict(color="green",
                     dash="dash",
                     width=3),
-                    label="New Income"
+                    name="New credit to annuity ratio"
         )
 
-    elif feature_selected=='YEAR(DAYS_EMPLOYED_timedelta)':
+    if feature_selected=='NEW_CREDIT_TO_ANNUITY_RATIO':
         fig.add_shape(type="line", yref="paper",
-            x0=new_days_employed, 
+            x0=new_ratio_value, 
             y0=0, 
-            x1=new_days_employed, 
+            x1=new_ratio_value, 
             y1=0.70,
             line=dict(color="green",
                     dash="dash",
                     width=3),
-                    label="New value for days employed"
+                    name="New credit to annuity ratio"
+        )
+        
+
+    elif feature_selected=='NEW_EXT_SOURCES_MEAN':
+        fig.add_shape(type="line", yref="paper",
+            x0=new_NEW_EXT_SOURCES_MEAN, 
+            y0=0, 
+            x1=new_NEW_EXT_SOURCES_MEAN, 
+            y1=0.70,
+            line=dict(color="green",
+                    dash="dash",
+                    width=3),
+                    name="New value for EXT_SOURCES_MEAN"
         )                    
 
     fig.update_layout(title=feature_selected +'(Revenu : ' + str(revenu_value[0]*10) + " - " + str(revenu_value[1]*10) + "k$ / age :" + str(age_value[0]) + " - " + str(age_value[1]) +")")
@@ -241,47 +254,54 @@ def update_graph(revenu_value, age_value,loans_id,feature_selected,new_income_va
     return fig
 #########################################
 
-################### Update Income Value
+################### Update ratio Value
 @app.callback(
-    dash.dependencies.Output('income_input', 'value'),
+    dash.dependencies.Output('ratio_input', 'value'),
     dash.dependencies.Input('loans_selection', 'value'))
 
-def update_income_value(loan_id):
+def update_ratio_value(loan_id):
 
-    new_income = test.loc[loan_id,'AMT_INCOME_TOTAL']
-    return new_income
+    new_ratio = round(test.loc[loan_id,'NEW_CREDIT_TO_ANNUITY_RATIO'],3)
+    return new_ratio
 #########################################
 
-################### Update Days employed
+################### Update EXT_SOURCES_MEAN
 @app.callback(
-    dash.dependencies.Output('days_employed_input', 'value'),
+    dash.dependencies.Output('NEW_EXT_SOURCES_MEAN_input', 'value'),
     dash.dependencies.Input('loans_selection', 'value'))
 
-def update_income_value(loan_id):
+def update_ratio_value(loan_id):
 
-    new_days_employed = test.loc[loan_id,'YEAR(DAYS_EMPLOYED_timedelta)']
-    return new_days_employed
+    new_NEW_EXT_SOURCES_MEAN = round(test.loc[loan_id,'NEW_EXT_SOURCES_MEAN'],3)
+    return new_NEW_EXT_SOURCES_MEAN
 #########################################
 
 
 ################### Update Result Assesment
 @app.callback(
     dash.dependencies.Output('result_assessment', 'figure'),
-    dash.dependencies.Input('loans_selection', 'value'))
+    [dash.dependencies.Input('loans_selection', 'value'),
+    dash.dependencies.Input('ratio_input', 'value'),
+    dash.dependencies.Input('NEW_EXT_SOURCES_MEAN_input', 'value')])
 
-def update_graph(loans_id):
+def update_graph(loans_id,new_ratio_value,new_NEW_EXT_SOURCES_MEAN):
 
     test.loc["New_loan",:] = test.loc[loans_id,:]
- 
-    result_assessment_model_updated = round(model.predict_proba(test.loc[[loans_id,"New_loan",],:])[1,0]*100,0)
+    test.loc["New_loan",'NEW_CREDIT_TO_ANNUITY_RATIO']=new_ratio_value
+    test.loc["New_loan",'NEW_EXT_SOURCES_MEAN']=new_NEW_EXT_SOURCES_MEAN
+    result_assessment_model_updated = round(model.predict_proba(test.loc[[loans_id,"New_loan"],:])[1,0]*100,0)
 
     fig = results_assessment(min_value=55, 
                             your_application_value = result_assessment_model_updated
                             )
-
                       
-    fig.update_layout(title='Your application results : ' + str(result_assessment_model_updated) + "%")                      
+    fig.update_layout(title='Your application results : ' + str(result_assessment_model_updated) + "%")
+
+   
     return fig
+
+
+
 #########################################
 
 
