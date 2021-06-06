@@ -20,13 +20,14 @@ import pandas as pd
 
 
 
+
 external_stylesheets = ['bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 cachedir = 'Data/'
-VERSION_NAME="3juin21_v4_sampled_2500"
-
+VERSION_NAME="3juin21_v6_corr_dates_sampled_2500"
+days_conversion = -3.8*10**(-16)
 
 train = pd.read_csv(cachedir+"train_final_df"+VERSION_NAME+".csv",sep=",")
 y_train = pd.read_csv(cachedir+"train_label"+VERSION_NAME+".csv",sep=",")
@@ -42,16 +43,23 @@ model = load(cachedir+"modelxgboost3"+VERSION_NAME)
 
 loan_selected_index = test.iloc[0,:].name
 test.loc["New_loan",:] = test.loc[loan_selected_index,:]
- 
 
-list_features_selection = ['age','AMT_CREDIT','NEW_CREDIT_TO_ANNUITY_RATIO',
+
+list_features_selection = ['age','AMT_INCOME_TOTAL',
+                            'AMT_CREDIT','DAYS_EMPLOYED',
+                            'NEW_CREDIT_TO_GOODS_RATIO',
                             'NEW_EXT_SOURCES_PROD','NEW_EXT_SOURCES_MEAN',
-                            'MONTH(DAYS_LAST_PHONE_CHANGE_timedelta)',
-                            'AMT_ANNUITY','NEW_EMPLOY_TO_BIRTH_RATIO']
+                            'AMT_GOODS_PRICE',
+                            'AMT_ANNUITY']
 
-train_histogram = pd.concat([train,y_train],axis=1)[['TARGET','AMT_INCOME_TOTAL']+list_features_selection]
+train_histogram = pd.concat([train,y_train],axis=1)[['TARGET']+list_features_selection].fillna(0)
+train_histogram['DAYS_EMPLOYED']=train_histogram['DAYS_EMPLOYED']*days_conversion
 
 result_assessment_model = model.predict_proba(test.loc[[loan_selected_index,"New_loan",],])
+
+red_button_style = {'background-color': 'red',
+                    'color': 'white'}
+normal_button_style={'fontsize':'12px'}
 
 ################# INTERACTIONS #########################
 slider_age=dcc.RangeSlider(
@@ -89,17 +97,22 @@ Features_histogram_selection = dcc.Dropdown(id='features_histogram_selection',
 ratio_value_input = dcc.Input(
                     id="ratio_input", 
                     type="number", 
-                    placeholder="New credit to annuity ratio",
+                    placeholder="New credit to goods ratio",
                     min=0,
-                    value=round(test.loc[loan_selected_index,'NEW_CREDIT_TO_ANNUITY_RATIO'],2)
+                    value=round(test.loc[loan_selected_index,'NEW_CREDIT_TO_GOODS_RATIO'],2)
                     )
 
-NEW_EXT_SOURCES_MEAN_value_input =dcc.Input(
-                    id="NEW_EXT_SOURCES_MEAN_input", type="number", placeholder="NEW_EXT_SOURCES_MEAN",
-                    min=0, 
-                    max=1 ,
-                    value=round(test.loc[loan_selected_index,'NEW_EXT_SOURCES_MEAN'],3)
+AMT_GOODS_PRICE_value_input =dcc.Input(
+                    id="AMT_GOODS_PRICE_input", type="number", placeholder="Good prices",
+                    min=0,
+                    value=round(test.loc[loan_selected_index,'AMT_GOODS_PRICE'],3)
                     )
+
+DAYS_EMPLOYED_value_input =dcc.Input(
+                    id="DAYS_EMPLOYED_input", type="number", placeholder="Days worked",
+                    min=0,
+                    value= round(test.loc[loan_selected_index,'DAYS_EMPLOYED']*days_conversion,1)
+                    )                   
 ################# FIGURES ############################
 Histogram = dcc.Graph(
         id='histo_graph',
@@ -147,29 +160,58 @@ app.layout = html.Div([
             Features_histogram_selection,
             html.Hr(className="light"),
             
+            
+            html.Div([        
+                html.Label('Goods price',style={'fontsize':'6px'}),
+                html.Br(),
+                AMT_GOODS_PRICE_value_input
+                ],
+                style={'width': '25%', 'display': 'inline-block','float': 'left'}
+                ),
+
             html.Div([              
-                html.Label('New credit to annuity ratio'),
+                html.Label('Credit/annuity ratio',style={'fontsize':'6px'}),
                 html.Br(),
                 ratio_value_input
                 ],
                 style={
-                    'width': '50%', 
+                    'width': '25%', 
+                    'display': 'inline-block',
+                    'float': 'center'
+                    }
+                ),
+            html.Div([ 
+                html.Button('Original values',
+                    value='Original values', 
+                    id='button_update', 
+                    n_clicks=0,
+                    className = "Buttons",
+                    type='button',
+                    style=normal_button_style)],
+                style={
+                    'width': '25%', 
                     'display': 'inline-block',
                     'float': 'right'
                     }
                 ),
-            html.Div([        
-                html.Label('New value EXT Sources mean'),
+            html.Div([              
+                html.Label('Months worked',style={'fontsize':'6px'}),
                 html.Br(),
-                NEW_EXT_SOURCES_MEAN_value_input
+                DAYS_EMPLOYED_value_input
                 ],
-                style={'width': '30%', 'display': 'inline-block'}
-                )],                
+                style={
+                    'width': '25%', 
+                    'display': 'inline-block',
+                    'float': 'center'
+                    }
+                )
+                ],                
             style={
                 'width': '48%', 
                 'display': 'inline-block',
                 'float': 'right'
                 }
+
             )
             ],
         style={
@@ -197,9 +239,10 @@ app.layout = html.Div([
     dash.dependencies.Input('loans_selection', 'value'),
     dash.dependencies.Input('features_histogram_selection','value'),
     dash.dependencies.Input('ratio_input', 'value'),
-    dash.dependencies.Input('NEW_EXT_SOURCES_MEAN_input', 'value')])
+    dash.dependencies.Input('AMT_GOODS_PRICE_input', 'value'),
+    dash.dependencies.Input('DAYS_EMPLOYED_input', 'value')])
 
-def update_graph(revenu_value, age_value,loans_id,feature_selected,new_ratio_value,new_NEW_EXT_SOURCES_MEAN):
+def update_graph(revenu_value, age_value,loans_id,feature_selected,new_ratio_value,new_AMT_GOODS_PRICE,new_DAYS_EMPLOYED):
 
     fig = graph_histogram(df=train_histogram,
                     loan_test_value = test.loc[loans_id,feature_selected],
@@ -210,8 +253,10 @@ def update_graph(revenu_value, age_value,loans_id,feature_selected,new_ratio_val
                     max_age_value = age_value[1]
                     )
     
+    fig.update_layout(title=feature_selected +'(Revenu : ' + str(revenu_value[0]*10) + " - " + str(revenu_value[1]*10) + "k$ / age :" + str(age_value[0]) + " - " + str(age_value[1]) +")")
     
-    if feature_selected=='NEW_CREDIT_TO_ANNUITY_RATIO':
+    
+    if feature_selected=='NEW_CREDIT_TO_GOODS_RATIO':
         fig.add_shape(type="line", yref="paper",
             x0=new_ratio_value, 
             y0=0, 
@@ -223,24 +268,38 @@ def update_graph(revenu_value, age_value,loans_id,feature_selected,new_ratio_val
                     name="New credit to annuity ratio"
         )
 
-    if feature_selected=='NEW_CREDIT_TO_ANNUITY_RATIO':
-        fig.add_shape(type="line", yref="paper",
-            x0=new_ratio_value, 
-            y0=0, 
-            x1=new_ratio_value, 
-            y1=0.70,
-            line=dict(color="green",
-                    dash="dash",
-                    width=3),
-                    name="New credit to annuity ratio"
-        )
+    elif feature_selected=='DAYS_EMPLOYED':
         
+        fig = graph_histogram(df=train_histogram[train_histogram[feature_selected]<500],
+                    loan_test_value = test.loc[loans_id,feature_selected]*days_conversion,
+                    feature_figure_1 = feature_selected,
+                    min_revenu_value = revenu_value[0]*10000,
+                    max_revenu_value = revenu_value[1]*10000,
+                    min_age_value = age_value[0],
+                    max_age_value = age_value[1]
+                    )
 
-    elif feature_selected=='NEW_EXT_SOURCES_MEAN':
         fig.add_shape(type="line", yref="paper",
-            x0=new_NEW_EXT_SOURCES_MEAN, 
+            x0=new_DAYS_EMPLOYED*days_conversion, 
             y0=0, 
-            x1=new_NEW_EXT_SOURCES_MEAN, 
+            x1=new_DAYS_EMPLOYED*days_conversion, 
+            y1=0.70,
+            line=dict(color="green",
+                    dash="dash",
+                    width=3),
+                    name="New DAYS worked"
+        )
+        fig.update_layout(
+            title="Month Worked (Revenu : " + str(revenu_value[0]*10) + " - " + str(revenu_value[1]*10)+"k$ / age :" + str(age_value[0]) + " - " + str(age_value[1]) +")",
+            xaxis_title="Months Worked",
+            )
+    
+
+    elif feature_selected=='AMT_GOODS_PRICE':
+        fig.add_shape(type="line", yref="paper",
+            x0=new_AMT_GOODS_PRICE, 
+            y0=0, 
+            x1=new_AMT_GOODS_PRICE, 
             y1=0.70,
             line=dict(color="green",
                     dash="dash",
@@ -248,47 +307,78 @@ def update_graph(revenu_value, age_value,loans_id,feature_selected,new_ratio_val
                     name="New value for EXT_SOURCES_MEAN"
         )                    
 
-    fig.update_layout(title=feature_selected +'(Revenu : ' + str(revenu_value[0]*10) + " - " + str(revenu_value[1]*10) + "k$ / age :" + str(age_value[0]) + " - " + str(age_value[1]) +")")
     
     
     return fig
 #########################################
 
-################### Update ratio Value
+################### UPDATE data
 @app.callback(
-    dash.dependencies.Output('ratio_input', 'value'),
-    dash.dependencies.Input('loans_selection', 'value'))
+    [dash.dependencies.Output('ratio_input', 'value'),
+    dash.dependencies.Output('AMT_GOODS_PRICE_input', 'value'), 
+    dash.dependencies.Output('DAYS_EMPLOYED_input', 'value'),
+    dash.dependencies.Output('button_update', 'value'),
+    dash.dependencies.Output('button_update', 'style')],
+    [dash.dependencies.Input('button_update', 'n_clicks'),
+    dash.dependencies.Input('loans_selection', 'value'),
+    dash.dependencies.Input('ratio_input', 'value'),
+    dash.dependencies.Input('AMT_GOODS_PRICE_input', 'value'),
+    dash.dependencies.Input('DAYS_EMPLOYED_input', 'value')])
 
-def update_ratio_value(loan_id):
+def update_ratio_value(btn1, loan_id, new_ratio_value,new_AMT_GOODS_PRICE,new_DAYS_EMPLOYED):
 
-    new_ratio = round(test.loc[loan_id,'NEW_CREDIT_TO_ANNUITY_RATIO'],3)
-    return new_ratio
+    ctx = dash.callback_context
+   
+    if not ctx.triggered:
+        New_button_value = 'Original values'
+        style=normal_button_style
+        new_AMT_GOODS_PRICE = round(test.loc[loan_id,'AMT_GOODS_PRICE'],3)
+        new_DAYS_EMPLOYED = round(test.loc[loan_id,'DAYS_EMPLOYED']*days_conversion,1)
+        new_ratio = round(test.loc[loan_id,'NEW_CREDIT_TO_GOODS_RATIO'],3)
+    else:    
+        last_change = ctx.triggered[0]['prop_id'].split('.')[0]
+        New_button_value = 'Original values'
+        style=normal_button_style
+        if last_change=='loans_selection' or last_change=='button_update' and btn1>0:
+            new_ratio = round(test.loc[loan_id,'NEW_CREDIT_TO_GOODS_RATIO'],3)
+            new_AMT_GOODS_PRICE = round(test.loc[loan_id,'AMT_GOODS_PRICE'],3)
+            new_DAYS_EMPLOYED = round(test.loc[loan_id,'DAYS_EMPLOYED']*days_conversion,1)
+            New_button_value = 'Original values'
+            style=normal_button_style
+
+        elif new_DAYS_EMPLOYED != round(test.loc[loan_id,'DAYS_EMPLOYED']*days_conversion,1) \
+        or new_AMT_GOODS_PRICE != round(test.loc[loan_id,'AMT_GOODS_PRICE'],3) \
+        or new_ratio_value != round(test.loc[loan_id,'NEW_CREDIT_TO_GOODS_RATIO'],3):
+            
+            New_button_value = 'UPDATED values'
+            new_ratio = new_ratio_value
+            new_AMT_GOODS_PRICE = new_AMT_GOODS_PRICE
+            new_DAYS_EMPLOYED = new_DAYS_EMPLOYED
+            style = red_button_style
+        else:
+            new_ratio = round(test.loc[loan_id,'NEW_CREDIT_TO_GOODS_RATIO'],3)
+            new_AMT_GOODS_PRICE = round(test.loc[loan_id,'AMT_GOODS_PRICE'],3)
+            new_DAYS_EMPLOYED = round(test.loc[loan_id,'DAYS_EMPLOYED']*days_conversion,1)
+            New_button_value = 'Original values'
+            style=normal_button_style
+    
+    return new_ratio,new_AMT_GOODS_PRICE, new_DAYS_EMPLOYED, New_button_value,style
 #########################################
-
-################### Update EXT_SOURCES_MEAN
-@app.callback(
-    dash.dependencies.Output('NEW_EXT_SOURCES_MEAN_input', 'value'),
-    dash.dependencies.Input('loans_selection', 'value'))
-
-def update_ratio_value(loan_id):
-
-    new_NEW_EXT_SOURCES_MEAN = round(test.loc[loan_id,'NEW_EXT_SOURCES_MEAN'],3)
-    return new_NEW_EXT_SOURCES_MEAN
-#########################################
-
 
 ################### Update Result Assesment
 @app.callback(
     dash.dependencies.Output('result_assessment', 'figure'),
     [dash.dependencies.Input('loans_selection', 'value'),
     dash.dependencies.Input('ratio_input', 'value'),
-    dash.dependencies.Input('NEW_EXT_SOURCES_MEAN_input', 'value')])
+    dash.dependencies.Input('AMT_GOODS_PRICE_input', 'value'),
+    dash.dependencies.Input('DAYS_EMPLOYED_input', 'value')])
 
-def update_graph(loans_id,new_ratio_value,new_NEW_EXT_SOURCES_MEAN):
+def update_graph(loans_id,new_ratio_value,new_AMT_GOODS_PRICE,new_DAYS_EMPLOYED):
 
     test.loc["New_loan",:] = test.loc[loans_id,:]
-    test.loc["New_loan",'NEW_CREDIT_TO_ANNUITY_RATIO']=new_ratio_value
-    test.loc["New_loan",'NEW_EXT_SOURCES_MEAN']=new_NEW_EXT_SOURCES_MEAN
+    test.loc["New_loan",'NEW_CREDIT_TO_GOODS_RATIO']=new_ratio_value
+    test.loc["New_loan",'AMT_GOODS_PRICE']=new_AMT_GOODS_PRICE
+    test.loc["New_loan",'DAYS_EMPLOYED']=new_DAYS_EMPLOYED/days_conversion
     result_assessment_model_updated = round(model.predict_proba(test.loc[[loans_id,"New_loan"],:])[1,0]*100,0)
 
     fig = results_assessment(min_value=55, 

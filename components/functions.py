@@ -133,33 +133,6 @@ def results_assessment(min_value=55,your_application_value = 85):
 
 
 ############################ HISTOGRAMME GRAPH RESULT ##########################################################################
-def reduce_df(df,
-    feature_figure_1 = 'AMT_CREDIT',
-    feature_figure_2 = 'age',
-    min_revenu_value = 100000,
-    max_revenu_value = 200000,
-    min_age_value = 30,
-    max_age_value = 39):
-
-
-
-    min_revenu_condition = df[feature_figure_1]>=min_revenu_value
-    max_revenu_condition = df[feature_figure_1]<=max_revenu_value
-
-    
-
-    min_age_condition = df[feature_figure_2]>=min_age_value
-    max_age_condition = df[feature_figure_2]<=max_age_value
-
-    temp_df = df[
-                (df['TARGET']!=-999)
-                & min_revenu_condition
-                & max_revenu_condition
-                & min_age_condition
-                & max_age_condition
-                ]
-    return temp_df
-
 def graph_histogram(df,
                     loan_test_value,
                     feature_figure_1 = 'AMT_CREDIT',
@@ -183,9 +156,11 @@ def graph_histogram(df,
                 & max_revenu_condition
                 & min_age_condition
                 & max_age_condition
-                ,:]
+                ,:].copy()
 
-    fig = px.histogram(temp_df, 
+    temp_df[feature_figure_1]=temp_df[feature_figure_1].fillna(0)            
+
+    fig = px.histogram(temp_df.fillna(0), 
                     x=feature_figure_1,
                     color='TARGET',
                     hover_data=[feature_figure_1,'AMT_INCOME_TOTAL','age','TARGET'],
