@@ -398,4 +398,4 @@ def update_graph(loans_id,new_ratio_value,new_AMT_GOODS_PRICE,new_DAYS_EMPLOYED)
 
 dash.dependencies.Input('loans_selection', 'value')
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
