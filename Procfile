@@ -1,1 +1,1 @@
-web: gunicorn Dashboard:app.server
+web: gunicorn Dashboard:server
