@@ -8,3 +8,4 @@ joblib==1.0.1
 pandas==1.2.4
 plotly==4.14.3
 xgboost==0.90
+scipy==1.6.2
