@@ -26,6 +26,8 @@ external_stylesheets = ['bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
+server = app.server
+
 cachedir = 'Data/'
 VERSION_NAME="3juin21_v6_corr_dates_sampled_2500"
 days_conversion = -3.8*10**(-16)
