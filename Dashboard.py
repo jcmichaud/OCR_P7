@@ -10,7 +10,7 @@ from components.functions import results_assessment, graph_histogram
 
 # For graph
 import plotly.express as px
-import shap
+#import shap
 
 #for model
 from joblib import load
