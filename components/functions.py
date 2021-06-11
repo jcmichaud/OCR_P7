@@ -130,6 +130,11 @@ def results_assessment(min_value=55,your_application_value = 85):
 
   fig.update_layout(title_text=title,
                     title_xref='paper',
+                    font=dict(
+                        family="Courier New",
+                        size=12,
+                        color="black"
+                            )
                     width=300,
                     height=400)
   return fig
