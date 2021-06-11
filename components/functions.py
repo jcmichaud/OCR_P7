@@ -52,6 +52,7 @@ def results_assessment(min_value=55,your_application_value = 85):
               'Minimum result to accept the loan',
               'Your result',
               '']
+      title = "Your loans will be accepted. Your result is " + str(your_application_value) + "% (above the minimum value" + label_min_value + ")"
 
       rotation = 90   #90-(100 - your_application_value)*360/100
 
@@ -103,6 +104,8 @@ def results_assessment(min_value=55,your_application_value = 85):
               'Minimum result to accept the loan',
               '']
 
+      title = "Your loans will NOT be accepted. Your result is " + str(your_application_value) + "% (above the minimum value" + label_min_value + ")"
+
       rotation = 90  
 
       # Use `hole` to create a donut-like pie char
@@ -125,7 +128,7 @@ def results_assessment(min_value=55,your_application_value = 85):
                     opacity=0.7
                    )
 
-  fig.update_layout(title_text="Your application result",
+  fig.update_layout(title_text=title,
                     title_xref='paper',
                     width=300,
                     height=400)

@@ -388,7 +388,7 @@ def update_graph(loans_id,new_ratio_value,new_AMT_GOODS_PRICE,new_DAYS_EMPLOYED)
                             your_application_value = result_assessment_model_updated
                             )
                       
-    fig.update_layout(title='Your application results : ' + str(result_assessment_model_updated) + "%")
+    #fig.update_layout(title='Your application results : ' + str(result_assessment_model_updated) + "%")
 
    
     return fig
