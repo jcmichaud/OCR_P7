@@ -283,9 +283,9 @@ def update_graph(revenu_value, age_value,loans_id,feature_selected,new_ratio_val
                     )
 
         fig.add_shape(type="line", yref="paper",
-            x0=new_DAYS_EMPLOYED*days_conversion, 
+            x0=new_DAYS_EMPLOYED, 
             y0=0, 
-            x1=new_DAYS_EMPLOYED*days_conversion, 
+            x1=new_DAYS_EMPLOYED, 
             y1=0.70,
             line=dict(color="green",
                     dash="dash",
