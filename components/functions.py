@@ -6,7 +6,7 @@ import plotly.express as px
 #Result figure
 
 ############################ DONUT GRAPH RESULT ########################################################################## 
-def results_assessment(min_value=55,your_application_value = 85):
+def results_assessment(min_value=48,your_application_value = 85):
 
   label_min_value = str(min_value)+"%"
   label_your_application_value = str(your_application_value)+"%"
@@ -134,7 +134,7 @@ def results_assessment(min_value=55,your_application_value = 85):
                         family="Courier New",
                         size=12,
                         color="black"
-                            )
+                            ),
                     width=300,
                     height=400)
   return fig

@@ -131,7 +131,7 @@ Histogram = dcc.Graph(
 
 result_assessment = dcc.Graph(
     id='result_assessment',
-    figure=results_assessment(min_value=55, 
+    figure=results_assessment(min_value=48, 
                             your_application_value = round(result_assessment_model[1,0],2)*100
                             )
     )
