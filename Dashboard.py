@@ -33,7 +33,7 @@ VERSION_NAME="full_compressed_sampled_307511"
 days_conversion = -0.0328767
 label_min_value = 48
 
-train = pd.read_pickle(cachedir+"train_final_df"+VERSION_NAME+".pkl")
+train_histo = pd.read_pickle(cachedir+"train_final_df_histogram"+VERSION_NAME+".pkl")
 y_train = pd.read_pickle(cachedir+"train_label"+VERSION_NAME+".pkl")
 test = pd.read_pickle(cachedir+"test_final_df"+VERSION_NAME+".pkl")
 y_test = pd.read_pickle(cachedir+"test_label"+VERSION_NAME+".pkl")
@@ -59,8 +59,9 @@ list_features_selection = ['age','AMT_INCOME_TOTAL',
                             'AMT_GOODS_PRICE',
                             'AMT_ANNUITY']
 
-train_histogram = pd.concat([train,y_train],axis=1)[['TARGET']+list_features_selection].fillna(0)
+train_histogram = pd.concat([train_histo,y_train],axis=1)[['TARGET']+list_features_selection].fillna(0)
 train_histogram['DAYS_EMPLOYED']=train_histogram['DAYS_EMPLOYED']*days_conversion
+
 
 result_assessment_model = model.predict_proba(test.loc[[loan_selected_index,"New_loan",],])
 
