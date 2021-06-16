@@ -29,20 +29,24 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
 
 cachedir = 'Data/'
-VERSION_NAME="3juin21_v6_corr_dates_sampled_2500"
-days_conversion = -3.8*10**(-16)
+VERSION_NAME="full_compressed_sampled_307511"
+days_conversion = -0.0328767
+label_min_value = 48
 
-train = pd.read_csv(cachedir+"train_final_df"+VERSION_NAME+".csv",sep=",")
-y_train = pd.read_csv(cachedir+"train_label"+VERSION_NAME+".csv",sep=",")
-test = pd.read_csv(cachedir+"test_final_df"+VERSION_NAME+".csv",sep=",")
-y_test = pd.read_csv(cachedir+"test_label"+VERSION_NAME+".csv",sep=",")
+train = pd.read_pickle(cachedir+"train_final_df"+VERSION_NAME+".pkl")
+y_train = pd.read_pickle(cachedir+"train_label"+VERSION_NAME+".pkl")
+test = pd.read_pickle(cachedir+"test_final_df"+VERSION_NAME+".pkl")
+y_test = pd.read_pickle(cachedir+"test_label"+VERSION_NAME+".pkl")
 
-train = train.set_index("SK_ID_CURR")
-y_train = y_train.set_index("SK_ID_CURR")
-test = test.set_index("SK_ID_CURR")
-y_test = y_test.set_index("SK_ID_CURR")
+#train = train.set_index("SK_ID_CURR")
+##y_train = y_train.set_index("SK_ID_CURR")
+#test = test.set_index("SK_ID_CURR")
+#y_test = y_test.set_index("SK_ID_CURR")
 
-model = load(cachedir+"modelxgboost3"+VERSION_NAME)
+
+model = xgboost.XGBClassifier()
+model.load_model(cachedir+'modelxgboost1'+VERSION_NAME+'.json')
+#model = load(cachedir+"modelxgboost3"+VERSION_NAME)
 
 loan_selected_index = test.iloc[0,:].name
 test.loc["New_loan",:] = test.loc[loan_selected_index,:]
@@ -131,10 +135,14 @@ Histogram = dcc.Graph(
 
 result_assessment = dcc.Graph(
     id='result_assessment',
-    figure=results_assessment(min_value=48, 
+    figure=results_assessment(min_value=label_min_value, 
                             your_application_value = round(result_assessment_model[1,0],2)*100
                             )
     )
+
+text_result_assessment = html.Label('To pass, your result must be over 48%',
+                    id='text_assement',
+                    style={'fontsize':'6px'})
 
 
 app.layout = html.Div([
@@ -226,8 +234,13 @@ app.layout = html.Div([
             ),
 
     html.Div([
-            html.Div([result_assessment],style={'width': '39%','display': 'inline-block'}),
-            html.Div([Histogram],style={'width': '60%','display': 'inline-block','float': 'right'}),
+            html.Div([
+                result_assessment,
+                text_result_assessment
+                ],style={'width': '39%','display': 'inline-block','float': 'center'}),
+            html.Div([
+                Histogram
+                ],style={'width': '60%','display': 'inline-block','float': 'right'}),
             ],
             style={'display': 'inline-block',"background-color":'white'}),
             ])
@@ -256,7 +269,11 @@ def update_graph(revenu_value, age_value,loans_id,feature_selected,new_ratio_val
                     max_age_value = age_value[1]
                     )
     
-    fig.update_layout(title=feature_selected +'(Revenu : ' + str(revenu_value[0]*10) + " - " + str(revenu_value[1]*10) + "k$ / age :" + str(age_value[0]) + " - " + str(age_value[1]) +")")
+    fig.update_layout(
+        title_font_family="arial",
+        title_font_color = "black",
+        title=feature_selected +'(Revenu : ' + str(revenu_value[0]*10) + " - " + str(revenu_value[1]*10) + "k$ / age :" + str(age_value[0]) + " - " + str(age_value[1]) +")"
+        )
     
     
     if feature_selected=='NEW_CREDIT_TO_GOODS_RATIO':
@@ -293,6 +310,8 @@ def update_graph(revenu_value, age_value,loans_id,feature_selected,new_ratio_val
                     name="New DAYS worked"
         )
         fig.update_layout(
+            title_font_family="arial",
+            title_font_color = "black",
             title="Month Worked (Revenu : " + str(revenu_value[0]*10) + " - " + str(revenu_value[1]*10)+"k$ / age :" + str(age_value[0]) + " - " + str(age_value[1]) +")",
             xaxis_title="Months Worked",
             )
@@ -371,6 +390,7 @@ def update_ratio_value(btn1, loan_id, new_ratio_value,new_AMT_GOODS_PRICE,new_DA
 ################### Update Result Assesment
 @app.callback(
     dash.dependencies.Output('result_assessment', 'figure'),
+    dash.dependencies.Output('text_assement', component_property='children'),
     [dash.dependencies.Input('loans_selection', 'value'),
     dash.dependencies.Input('ratio_input', 'value'),
     dash.dependencies.Input('AMT_GOODS_PRICE_input', 'value'),
@@ -384,18 +404,31 @@ def update_graph(loans_id,new_ratio_value,new_AMT_GOODS_PRICE,new_DAYS_EMPLOYED)
     test.loc["New_loan",'DAYS_EMPLOYED']=new_DAYS_EMPLOYED/days_conversion
     result_assessment_model_updated = round(model.predict_proba(test.loc[[loans_id,"New_loan"],:])[1,0]*100,0)
 
-    fig = results_assessment(min_value=55, 
-                            your_application_value = result_assessment_model_updated
-                            )
+
                       
     #fig.update_layout(title='Your application results : ' + str(result_assessment_model_updated) + "%")
-
+    if result_assessment_model_updated>label_min_value:
+        title ="Your loans will be accepted. \
+                \n Your result is " + str(result_assessment_model_updated) + "% \
+                \n (above the minimum value " + str(label_min_value) + "%)"
+        fig = results_assessment(min_value=label_min_value, 
+                            your_application_value = result_assessment_model_updated
+                            )
+    else:
+        title = "Your loans will NOT be accepted. \
+                \n Your result is " + str(result_assessment_model_updated) + "% \
+                \n (under the minimum value " + str(label_min_value) + "%)"
+        fig = results_assessment(min_value=label_min_value, 
+                            your_application_value = result_assessment_model_updated
+                            )
+                    
+     
    
-    return fig
+    return fig,title
 
 
 
 #########################################
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
