@@ -6,7 +6,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 
 #from specific functions
-from components.functions import results_assessment, graph_histogram,_force_plot_html
+from components.functions import results_assessment, graph_histogram,water_fall_plot_shap
 
 # For graph
 import plotly.express as px
@@ -45,9 +45,9 @@ y_test = pd.read_pickle(cachedir+"test_label"+VERSION_NAME+".pkl")
 
 
 model = xgboost.XGBClassifier()
-model.load_model(cachedir+'modelxgboost1'+VERSION_NAME+'.json')
+model.load_model(cachedir+'modelxgboost3'+VERSION_NAME+'.json')
 #model = load(cachedir+"modelxgboost3"+VERSION_NAME)
-
+model.fit(train,y_train['TARGET'].to_list())
 loan_selected_index = test.iloc[0,:].name
 loan_selected_iloc = test.reset_index().loc[test.reset_index().SK_ID_CURR==loan_selected_index,:].index.to_list()[0]
 
@@ -70,9 +70,9 @@ red_button_style = {'background-color': 'red',
                     'color': 'white'}
 normal_button_style={'fontsize':'12px'}
 
-shap_xgb_explainer = shap.Explainer(model)
+shap_xgb_explainer = shap.TreeExplainer(model)
 shap_xgb_values_test_whole = shap_xgb_explainer(X=test, 
-                        y=y_test)
+                        y=y_test['TARGET'].to_list())
 
 
 ################# INTERACTIONS #########################
