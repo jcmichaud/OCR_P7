@@ -45,7 +45,7 @@ y_test = pd.read_pickle(cachedir+"test_label"+VERSION_NAME+".pkl")
 
 
 model = xgboost.XGBClassifier()
-model.load_model(cachedir+'modelxgboost1'+VERSION_NAME+'.json')
+model.load_model(cachedir+'modelxgboost3'+VERSION_NAME+'.json')
 #model = load(cachedir+"modelxgboost3"+VERSION_NAME)
 
 loan_selected_index = test.iloc[0,:].name
@@ -239,7 +239,8 @@ app.layout = html.Div([
                 text_result_assessment
                 ],style={'width': '39%','display': 'inline-block','float': 'center'}),
             html.Div([
-                Histogram
+                Histogram,
+                html.Label("Black Dashed line represents the applicant value. \n Green dashed line represents the new value entered.")
                 ],style={'width': '60%','display': 'inline-block','float': 'right'}),
             ],
             style={'display': 'inline-block',"background-color":'white'}),
@@ -431,4 +432,4 @@ def update_graph(loans_id,new_ratio_value,new_AMT_GOODS_PRICE,new_DAYS_EMPLOYED)
 #########################################
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
