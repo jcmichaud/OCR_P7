@@ -6,11 +6,11 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 
 #from specific functions
-from components.functions import results_assessment, graph_histogram
+from components.functions import results_assessment, graph_histogram,_force_plot_html
 
 # For graph
 import plotly.express as px
-#import shap
+import shap
 
 #for model
 from joblib import load
@@ -49,6 +49,8 @@ model.load_model(cachedir+'modelxgboost1'+VERSION_NAME+'.json')
 #model = load(cachedir+"modelxgboost3"+VERSION_NAME)
 
 loan_selected_index = test.iloc[0,:].name
+loan_selected_iloc = test.reset_index().loc[test.reset_index().SK_ID_CURR==loan_selected_index,:].index.to_list()[0]
+
 test.loc["New_loan",:] = test.loc[loan_selected_index,:]
 
 
@@ -67,6 +69,11 @@ result_assessment_model = model.predict_proba(test.loc[[loan_selected_index,"New
 red_button_style = {'background-color': 'red',
                     'color': 'white'}
 normal_button_style={'fontsize':'12px'}
+
+shap_xgb_explainer = shap.Explainer(model)
+shap_xgb_values_test_whole = shap_xgb_explainer(X=test, 
+                        y=y_test)
+
 
 ################# INTERACTIONS #########################
 slider_age=dcc.RangeSlider(
@@ -144,7 +151,12 @@ text_result_assessment = html.Label('To pass, your result must be over 48%',
                     id='text_assement',
                     style={'fontsize':'6px'})
 
+shap_waterfall = dcc.Graph(
+    id='shap_waterfall',
+    figure=water_fall_plot_shap(shap_xgb_values_test_whole,loan_selected_iloc)
+    )
 
+################ LAYOUT ##############################
 app.layout = html.Div([
     html.Header([
         html.Div([
@@ -237,7 +249,10 @@ app.layout = html.Div([
             html.Div([
                 result_assessment,
                 text_result_assessment
-                ],style={'width': '39%','display': 'inline-block','float': 'center'}),
+                ],style={'width': '39%','display': 'inline-block','float': 'left'}),
+            html.Div([
+            shap_waterfall
+            ],style={'width': '39%','display': 'inline-block','float': 'center'}),
             html.Div([
                 Histogram
                 ],style={'width': '60%','display': 'inline-block','float': 'right'}),

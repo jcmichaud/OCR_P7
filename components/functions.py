@@ -1,6 +1,7 @@
 import plotly.graph_objects as go
 import pandas as pd
 import plotly.express as px
+import shap 
 
 
 #Result figure
@@ -192,7 +193,9 @@ def graph_histogram(df,
 
     return fig
 
-
+def water_fall_plot_shap(shap_xgb_values_train,idx):
+    fig = shap.plots.waterfall(shap_xgb_values_train[idx])
+    return fig
     
 
 
